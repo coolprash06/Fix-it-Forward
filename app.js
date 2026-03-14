@@ -761,19 +761,38 @@ if (themeToggleBtn) {
 
 // ─── 15. AUTH UI ──────────────────────────────────────────────────────────────
 
-/** Sync entire header auth UI to current userState. */
+/** Sync entire header auth UI to current userState with a smooth crossfade. */
 function renderAuthUI() {
   if (userState.isLoggedIn && userState.userData) {
     const { name, email, initials } = userState.userData;
-    authLoginBtn.hidden = true;
-    userMenu.hidden = false;
+
+    // Update content first
     userInitialsEl.textContent = initials;
     userGreetName.textContent = name.split(' ')[0];
     userGreetEmail.textContent = email;
+
+    // Fade out login btn, fade in avatar
+    authLoginBtn.hidden = true;
+    userMenu.hidden = false;
+    // Allow browser to paint the unhidden state before fading in
+    requestAnimationFrame(() => {
+      authLoginBtn.classList.remove('auth-ui--visible');
+      userMenu.classList.add('auth-ui--visible');
+    });
   } else {
+    // Fade out avatar, fade in login btn
+    userMenu.classList.remove('auth-ui--visible');
     authLoginBtn.hidden = false;
-    userMenu.hidden = true;
+    requestAnimationFrame(() => {
+      userMenu.classList.add('auth-ui--visible'); // reset for next login
+      authLoginBtn.classList.add('auth-ui--visible');
+    });
     userDropdown.classList.remove('user-dropdown--open');
+
+    // Hide user-menu from layout after fade completes
+    userMenu.addEventListener('transitionend', () => {
+      if (!userState.isLoggedIn) userMenu.hidden = true;
+    }, { once: true });
   }
 }
 

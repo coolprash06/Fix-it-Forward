@@ -887,6 +887,22 @@ button {
    AUTH — Login button, User Avatar, Dropdown, Auth Modal
    ================================================================ */
 
+/* ── Auth UI crossfade — driven by renderAuthUI() in app.js ── */
+/* Both #auth-login-btn and #user-menu start invisible; JS adds .auth-ui--visible
+   to whichever should be shown, which fades it in over 250ms.               */
+#auth-login-btn,
+#user-menu {
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    /* pointer-events blocked while invisible so hidden items can't be clicked */
+    pointer-events: none;
+}
+
+.auth-ui--visible {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
 /* ── Login Button ── */
 .auth-btn {
     display: inline-flex;
