@@ -85,7 +85,8 @@ const PRODUCTS = [
 const stockMap = Object.fromEntries(PRODUCTS.map((p) => [p.id, p.stock]));
 
 const TAX_RATE   = 0.085; // 8.5 %
-const STORAGE_KEY = 'fif_cart_v1';
+const STORAGE_KEY  = 'fif_cart_v1';
+const THEME_KEY    = 'fif_theme_v1'; // 'dark' | 'light'
 
 // ─── 2. CART STATE ────────────────────────────────────────────────────────────
 
@@ -121,6 +122,7 @@ const searchInput    = document.getElementById('search-input');
 const footerYear     = document.getElementById('footer-year');
 const navToggle      = document.querySelector('.nav__toggle');
 const navMenu        = document.getElementById('nav-menu');
+const themeToggleBtn = document.getElementById('theme-toggle');
 
 // ─── 4. CART SIDEBAR TOGGLE ───────────────────────────────────────────────────
 
@@ -397,14 +399,59 @@ checkoutBtn.addEventListener('click', async () => {
     cart = [];
     saveCart(cart);
     renderCart();
-    checkoutStatus.textContent = '✅ Order placed! You\'ll receive a confirmation shortly.';
-    setTimeout(() => {
-      checkoutStatus.textContent = '';
-      closeCart();
-    }, 3000);
+    checkoutStatus.textContent = '';
+    closeCart();
+    showSuccessModal();
   } else {
     checkoutStatus.textContent = '❌ Something went wrong. Please try again.';
     checkoutBtn.disabled = false;
+  }
+});
+
+// ─── 10b. CHECKOUT SUCCESS MODAL ─────────────────────────────────────────────
+
+const successModal   = document.getElementById('checkout-success-modal');
+const modalOrderId   = document.getElementById('modal-order-id');
+const modalBackBtn   = document.getElementById('modal-back-btn');
+
+function generateOrderId() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let id = '#FIF-';
+  for (let i = 0; i < 6; i++) id += chars[Math.floor(Math.random() * chars.length)];
+  return id;
+}
+
+function showSuccessModal() {
+  modalOrderId.textContent = generateOrderId();
+  successModal.classList.remove('modal--hidden');
+  // Reset animation so it replays each time
+  successModal.style.animation = 'none';
+  successModal.querySelector('.modal-card').style.animation = 'none';
+  requestAnimationFrame(() => {
+    successModal.style.animation = '';
+    successModal.querySelector('.modal-card').style.animation = '';
+  });
+  modalBackBtn.focus();
+}
+
+function closeSuccessModal() {
+  successModal.classList.add('modal--hidden');
+}
+
+modalBackBtn.addEventListener('click', () => {
+  closeSuccessModal();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// Close on backdrop click
+successModal.addEventListener('click', (e) => {
+  if (e.target === successModal) closeSuccessModal();
+});
+
+// Close on Escape (extend existing keydown listener)
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !successModal.classList.contains('modal--hidden')) {
+    closeSuccessModal();
   }
 });
 
@@ -426,16 +473,17 @@ if (navToggle && navMenu) {
       navMenu.removeAttribute('style');
       navToggle.setAttribute('aria-expanded', 'false');
     } else {
+      const isDark = document.documentElement.dataset.theme !== 'light';
       Object.assign(navMenu.style, {
-        display:      'flex',
+        display:       'flex',
         flexDirection: 'column',
-        position:     'absolute',
-        top:          '64px',
-        right:        '0',
-        background:   'rgba(8,11,22,.98)',
-        padding:      '12px 24px',
-        borderRadius: '0 0 14px 14px',
-        zIndex:       '20',
+        position:      'absolute',
+        top:           '64px',
+        right:         '0',
+        background:    isDark ? 'rgba(8,11,22,.98)' : 'rgba(240,242,248,.98)',
+        padding:       '12px 24px',
+        borderRadius:  '0 0 14px 14px',
+        zIndex:        '20',
       });
       navToggle.setAttribute('aria-expanded', 'true');
     }
@@ -446,7 +494,47 @@ if (navToggle && navMenu) {
 
 if (footerYear) footerYear.textContent = String(new Date().getFullYear());
 
-// ─── 14. INIT ─────────────────────────────────────────────────────────────────
+// ─── 14. THEME TOGGLE ─────────────────────────────────────────────────────────
+
+/**
+ * Applies a theme ('dark' | 'light') to <html data-theme="...">
+ * and updates the toggle button's icon + aria-label.
+ */
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  if (themeToggleBtn) {
+    const icon  = themeToggleBtn.querySelector('.theme-toggle__icon');
+    const isDark = theme === 'dark';
+    icon.textContent                        = isDark ? '🌙' : '☀️';
+    themeToggleBtn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+  }
+}
+
+function toggleTheme() {
+  const current = document.documentElement.dataset.theme || 'dark';
+  const next    = current === 'dark' ? 'light' : 'dark';
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+
+  // Bounce the icon for a tactile feel
+  if (themeToggleBtn) {
+    const icon = themeToggleBtn.querySelector('.theme-toggle__icon');
+    icon.style.transform = 'scale(1.5) rotate(-20deg)';
+    setTimeout(() => { icon.style.transform = ''; }, 300);
+  }
+}
+
+// Restore saved preference immediately (before first paint)
+(function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY) || 'dark';
+  applyTheme(saved);
+})();
+
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener('click', toggleTheme);
+}
+
+// ─── 15. INIT ─────────────────────────────────────────────────────────────────
 
 renderProducts(PRODUCTS);
 renderCart();
