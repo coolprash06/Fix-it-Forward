@@ -631,7 +631,91 @@ if (navToggle && navMenu) {
   });
 }
 
-// ─── 13. FOOTER YEAR ──────────────────────────────────────────────────────────
+// ─── 13. SPA NAVIGATION ───────────────────────────────────────────────────────
+
+/** Close the mobile nav if it's open. */
+function closeMobileNav() {
+  if (navMenu && navMenu.style.display === 'flex') {
+    navMenu.removeAttribute('style');
+    navToggle.setAttribute('aria-expanded', 'false');
+  }
+}
+
+// Cart nav link → open cart sidebar
+document.getElementById('nav-cart')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  closeMobileNav();
+  renderCart();
+  openCart();
+});
+
+// Home nav link → smooth-scroll to #hero
+document.getElementById('nav-home')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  closeMobileNav();
+  document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' });
+});
+
+// Catalogue nav link → smooth-scroll to #catalog
+document.getElementById('nav-catalogue')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  closeMobileNav();
+  document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' });
+});
+
+// Help nav link → open FAQ modal
+document.getElementById('nav-help')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  closeMobileNav();
+  openFaqModal();
+});
+
+// Logo → smooth scroll to top
+document.querySelector('.logo')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// ─── 13b. FAQ MODAL ───────────────────────────────────────────────────────────
+
+const faqModal      = document.getElementById('faq-modal');
+const faqModalClose = document.getElementById('faq-modal-close');
+
+function openFaqModal() {
+  faqModal.classList.remove('modal--hidden');
+  const card = faqModal.querySelector('.auth-card');
+  card.style.animation = 'none';
+  requestAnimationFrame(() => { card.style.animation = ''; });
+  faqModalClose.focus();
+}
+
+function closeFaqModal() {
+  faqModal.classList.add('modal--hidden');
+}
+
+faqModalClose.addEventListener('click', closeFaqModal);
+faqModal.addEventListener('click', (e) => { if (e.target === faqModal) closeFaqModal(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !faqModal.classList.contains('modal--hidden')) closeFaqModal();
+});
+
+// Accordion toggle for each FAQ question
+document.querySelectorAll('.faq-question').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const answer   = btn.nextElementSibling;
+    const isOpen   = btn.getAttribute('aria-expanded') === 'true';
+    // Close all others first
+    document.querySelectorAll('.faq-question').forEach((b) => {
+      b.setAttribute('aria-expanded', 'false');
+      b.nextElementSibling.hidden = true;
+    });
+    // Toggle clicked one
+    btn.setAttribute('aria-expanded', String(!isOpen));
+    answer.hidden = isOpen;
+  });
+});
+
+// ─── 14. FOOTER YEAR ──────────────────────────────────────────────────────────
 
 if (footerYear) footerYear.textContent = String(new Date().getFullYear());
 

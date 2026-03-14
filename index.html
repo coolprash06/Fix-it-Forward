@@ -18,10 +18,10 @@
                 ☰
             </button>
             <ul id="nav-menu" class="nav__list">
-                <li><a href="#hero">Home</a></li>
-                <li><a href="#catalog">Catalogue</a></li>
-                <li><a href="#cart-panel">Cart</a></li>
-                <li><a href="#footer">Help</a></li>
+                <li><a href="#hero"       id="nav-home"      class="nav__link">Home</a></li>
+                <li><a href="#catalog"    id="nav-catalogue" class="nav__link">Catalogue</a></li>
+                <li><a href="#cart-panel" id="nav-cart"      class="nav__link">Cart</a></li>
+                <li><a href="#footer"     id="nav-help"      class="nav__link">Help</a></li>
             </ul>
         </nav>
         <div class="header-actions">
@@ -193,6 +193,38 @@
             <button class="btn btn--primary btn--full modal-card__cta" id="modal-back-btn">
                 Back to Shop
             </button>
+        </div>
+    </div>
+
+    <!-- ── FAQ / Help Modal ── -->
+    <div id="faq-modal" class="modal-overlay modal--hidden" role="dialog" aria-modal="true" aria-labelledby="faq-modal-title">
+        <div class="auth-card faq-card">
+            <button class="auth-card__close" id="faq-modal-close" aria-label="Close FAQ">×</button>
+            <h2 class="auth-card__title" id="faq-modal-title">❓ Help &amp; FAQ</h2>
+            <p class="auth-card__subtitle">Common questions about Fix-It Forward</p>
+            <ul class="faq-list" role="list">
+                <li class="faq-item">
+                    <button class="faq-question" aria-expanded="false">How do I place an order?</button>
+                    <div class="faq-answer" hidden>Browse the catalogue, set the quantity you want, and click <strong>Add to Cart</strong>. When ready, open the cart sidebar and hit <strong>Checkout</strong>.</div>
+                </li>
+                <li class="faq-item">
+                    <button class="faq-question" aria-expanded="false">Do I need an account to buy?</button>
+                    <div class="faq-answer" hidden>No — you can checkout as a guest. Creating an account lets you view your order history from the avatar menu.</div>
+                </li>
+                <li class="faq-item">
+                    <button class="faq-question" aria-expanded="false">Will my cart be saved if I refresh?</button>
+                    <div class="faq-answer" hidden>Yes! Your cart is stored in <code>localStorage</code> and will persist across page refreshes in the same browser.</div>
+                </li>
+                <li class="faq-item">
+                    <button class="faq-question" aria-expanded="false">How do I switch between dark and light mode?</button>
+                    <div class="faq-answer" hidden>Click the 🌙 / ☀️ button in the top-right header. Your preference is saved and will be remembered on your next visit.</div>
+                </li>
+                <li class="faq-item">
+                    <button class="faq-question" aria-expanded="false">Is this a real store?</button>
+                    <div class="faq-answer" hidden>Fix-It Forward is a demo store — no real products will ship. Orders are recorded in a Supabase database for demonstration purposes only.</div>
+                </li>
+            </ul>
+            <p class="faq-footer">Still need help? Email us at <a href="mailto:support@fixitforward.demo" class="faq-footer__link">support@fixitforward.demo</a></p>
         </div>
     </div>
 
