@@ -84,11 +84,110 @@ const PRODUCTS = [
 // Mutable stock map (productId -> remaining units)
 const stockMap = Object.fromEntries(PRODUCTS.map((p) => [p.id, p.stock]));
 
-const TAX_RATE   = 0.085; // 8.5 %
-const STORAGE_KEY  = 'fif_cart_v1';
-const THEME_KEY    = 'fif_theme_v1'; // 'dark' | 'light'
+const TAX_RATE = 0.085; // 8.5 %
+const STORAGE_KEY = 'fif_cart_v1';
+const THEME_KEY = 'fif_theme_v1'; // 'dark' | 'light'
+const AUTH_KEY = 'fif_auth_v1';  // current session: { name, email, initials }
+const USERS_KEY = 'fif_users_v1'; // user "database": [{ name, email, passHash }]
 
-// ─── 2. CART STATE ────────────────────────────────────────────────────────────
+// ─── 2. AUTH SERVICE (mock backend — swap method bodies for Firebase/Supabase) ─
+
+/**
+ * Simple djb2-style hash so we never store raw passwords.
+ * Replace with bcrypt / Firebase Auth in production.
+ */
+function _hashPass(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h) ^ str.charCodeAt(i);
+  return (h >>> 0).toString(36);
+}
+
+const authService = {
+  // ── Internal helpers ────────────────────────────────────────────────────────
+  _getUsers() {
+    try { return JSON.parse(localStorage.getItem(USERS_KEY)) || []; } catch { return []; }
+  },
+  _saveUsers(users) {
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  },
+  _saveSession(userData) {
+    localStorage.setItem(AUTH_KEY, JSON.stringify(userData));
+  },
+
+  // ── Public API ── (replace bodies here to integrate Firebase/Supabase) ─────
+
+  /**
+   * Login with email + password.
+   * @returns {Promise<{name, email, initials}>} resolves on success, rejects with Error on failure.
+   * Firebase equivalent:
+   *   return signInWithEmailAndPassword(auth, email, password)
+   *          .then(cred => toUserData(cred.user));
+   */
+  async login(email, password) {
+    await new Promise(r => setTimeout(r, 700)); // simulate latency
+    const users = this._getUsers();
+    const user = users.find(u => u.email === email.toLowerCase().trim());
+    if (!user || user.passHash !== _hashPass(password)) {
+      throw new Error('Invalid email or password.');
+    }
+    const userData = { name: user.name, email: user.email, initials: user.initials };
+    this._saveSession(userData);
+    return userData;
+  },
+
+  /**
+   * Register a new account.
+   * @returns {Promise<{name, email, initials}>}
+   * Firebase equivalent:
+   *   return createUserWithEmailAndPassword(auth, email, password)
+   *          .then(cred => updateProfile(cred.user, { displayName: name }))
+   *          .then(() => toUserData(auth.currentUser));
+   */
+  async register(name, email, password) {
+    await new Promise(r => setTimeout(r, 800)); // simulate latency
+    const users = this._getUsers();
+    const normEmail = email.toLowerCase().trim();
+    if (users.find(u => u.email === normEmail)) {
+      throw new Error('An account with this email already exists.');
+    }
+    const words = name.trim().split(/\s+/);
+    const initials = (words[0][0] + (words[1] ? words[1][0] : '')).toUpperCase();
+    const newUser = { name: name.trim(), email: normEmail, initials, passHash: _hashPass(password) };
+    users.push(newUser);
+    this._saveUsers(users);
+    const userData = { name: newUser.name, email: newUser.email, initials };
+    this._saveSession(userData);
+    return userData;
+  },
+
+  /**
+   * Sign out the current user.
+   * Firebase equivalent: signOut(auth);
+   */
+  logout() {
+    localStorage.removeItem(AUTH_KEY);
+  },
+
+  /**
+   * Read the persisted session (called on page load).
+   * Firebase equivalent: listen to onAuthStateChanged(auth, callback).
+   * @returns {{name, email, initials}|null}
+   */
+  getCurrentUser() {
+    try {
+      return JSON.parse(localStorage.getItem(AUTH_KEY)) || null;
+    } catch { return null; }
+  },
+};
+
+// ─── 3. USER STATE ────────────────────────────────────────────────────────────
+
+let userState = {
+  isLoggedIn: false,
+  userData: null, // { name, email, initials }
+};
+
+
 
 function loadCart() {
   try {
@@ -106,23 +205,45 @@ let cart = loadCart();
 
 // ─── 3. DOM REFERENCES ────────────────────────────────────────────────────────
 
-const productGrid    = document.getElementById('product-grid');
-const cardTemplate   = document.getElementById('product-card-template');
-const cartPanel      = document.getElementById('cart-panel');
-const cartItemsList  = document.getElementById('cart-items');
-const cartEmptyMsg   = document.getElementById('cart-empty-msg');
+const productGrid = document.getElementById('product-grid');
+const cardTemplate = document.getElementById('product-card-template');
+const cartPanel = document.getElementById('cart-panel');
+const cartItemsList = document.getElementById('cart-items');
+const cartEmptyMsg = document.getElementById('cart-empty-msg');
 const cartSubtotalEl = document.getElementById('cart-subtotal');
-const cartTaxEl      = document.getElementById('cart-tax');
-const cartTotalEl    = document.getElementById('cart-total');
-const cartCountEl    = document.querySelector('.header-cart__count');
-const checkoutBtn    = document.getElementById('checkout-btn');
+const cartTaxEl = document.getElementById('cart-tax');
+const cartTotalEl = document.getElementById('cart-total');
+const cartCountEl = document.querySelector('.header-cart__count');
+const checkoutBtn = document.getElementById('checkout-btn');
 const checkoutStatus = document.getElementById('checkout-status');
-const sortSelect     = document.getElementById('sort-select');
-const searchInput    = document.getElementById('search-input');
-const footerYear     = document.getElementById('footer-year');
-const navToggle      = document.querySelector('.nav__toggle');
-const navMenu        = document.getElementById('nav-menu');
+const sortSelect = document.getElementById('sort-select');
+const searchInput = document.getElementById('search-input');
+const footerYear = document.getElementById('footer-year');
+const navToggle = document.querySelector('.nav__toggle');
+const navMenu = document.getElementById('nav-menu');
 const themeToggleBtn = document.getElementById('theme-toggle');
+
+// Auth DOM refs
+const authLoginBtn = document.getElementById('auth-login-btn');
+const userMenu = document.getElementById('user-menu');
+const userAvatarBtn = document.getElementById('user-avatar-btn');
+const userInitialsEl = document.getElementById('user-initials');
+const userGreetName = document.getElementById('user-greeting-name');
+const userGreetEmail = document.getElementById('user-greeting-email');
+const userDropdown = document.getElementById('user-dropdown');
+const signoutBtn = document.getElementById('signout-btn');
+const authModal = document.getElementById('auth-modal');
+const authModalClose = document.getElementById('auth-modal-close');
+const tabSignin = document.getElementById('tab-signin');
+const tabRegister = document.getElementById('tab-register');
+const panelSignin = document.getElementById('panel-signin');
+const panelRegister = document.getElementById('panel-register');
+const signinForm = document.getElementById('signin-form');
+const registerForm = document.getElementById('register-form');
+const signinError = document.getElementById('signin-error');
+const registerError = document.getElementById('register-error');
+const signinSubmit = document.getElementById('signin-submit');
+const registerSubmit = document.getElementById('register-submit');
 
 // ─── 4. CART SIDEBAR TOGGLE ───────────────────────────────────────────────────
 
@@ -174,7 +295,7 @@ function escHtml(str) {
 function stockLabel(id) {
   const n = stockMap[id];
   if (n === 0) return '<span style="color:#f97373">Out of stock</span>';
-  if (n <= 5)  return `<span style="color:#fb923c">Only ${n} left</span>`;
+  if (n <= 5) return `<span style="color:#fb923c">Only ${n} left</span>`;
   return `<span style="color:#a3e635">In stock (${n})</span>`;
 }
 
@@ -184,16 +305,16 @@ function renderCart() {
   cartItemsList.innerHTML = '';
 
   if (cart.length === 0) {
-    cartEmptyMsg.hidden     = false;
+    cartEmptyMsg.hidden = false;
     cartSubtotalEl.textContent = fmt(0);
-    cartTaxEl.textContent      = fmt(0);
-    cartTotalEl.textContent    = fmt(0);
-    cartCountEl.textContent    = '0';
-    checkoutBtn.disabled       = true;
+    cartTaxEl.textContent = fmt(0);
+    cartTotalEl.textContent = fmt(0);
+    cartCountEl.textContent = '0';
+    checkoutBtn.disabled = true;
     return;
   }
 
-  cartEmptyMsg.hidden  = true;
+  cartEmptyMsg.hidden = true;
   checkoutBtn.disabled = false;
 
   let subtotal = 0;
@@ -219,13 +340,13 @@ function renderCart() {
     cartItemsList.appendChild(li);
   });
 
-  const tax   = subtotal * TAX_RATE;
+  const tax = subtotal * TAX_RATE;
   const total = subtotal + tax;
 
   cartSubtotalEl.textContent = fmt(subtotal);
-  cartTaxEl.textContent      = fmt(tax);
-  cartTotalEl.textContent    = fmt(total);
-  cartCountEl.textContent    = String(cart.reduce((s, i) => s + i.qty, 0));
+  cartTaxEl.textContent = fmt(tax);
+  cartTotalEl.textContent = fmt(total);
+  cartCountEl.textContent = String(cart.reduce((s, i) => s + i.qty, 0));
 }
 
 // Remove-item event delegation
@@ -233,7 +354,7 @@ cartItemsList.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-remove-id]');
   if (!btn) return;
 
-  const id   = btn.dataset.removeId;
+  const id = btn.dataset.removeId;
   const item = cart.find((i) => i.id === id);
   if (item) {
     stockMap[id] = (stockMap[id] || 0) + item.qty;
@@ -263,8 +384,8 @@ function addToCart(productId, qty) {
   if (existing) {
     // Don't exceed available stock
     const maxAdd = stockMap[productId];
-    const added  = Math.min(qty, maxAdd);
-    existing.qty        += added;
+    const added = Math.min(qty, maxAdd);
+    existing.qty += added;
     stockMap[productId] -= added;
   } else {
     cart.push({ id: productId, title: product.title, price: product.price, qty });
@@ -289,19 +410,19 @@ function updateStockBadge(productId) {
 }
 
 function createProductCard(product) {
-  const clone   = cardTemplate.content.cloneNode(true);
+  const clone = cardTemplate.content.cloneNode(true);
   const article = clone.querySelector('.product');
 
   article.dataset.productId = product.id;
 
   const img = article.querySelector('.product__image');
-  img.src     = product.image;
-  img.alt     = product.title;
+  img.src = product.image;
+  img.alt = product.title;
   img.loading = 'lazy';
 
-  article.querySelector('.product__title').textContent       = product.title;
+  article.querySelector('.product__title').textContent = product.title;
   article.querySelector('.product__description').textContent = product.description;
-  article.querySelector('.product__price').textContent       = fmt(product.price);
+  article.querySelector('.product__price').textContent = fmt(product.price);
 
   const compare = article.querySelector('.product__price--compare');
   if (product.comparePrice) {
@@ -313,7 +434,7 @@ function createProductCard(product) {
   article.querySelector('.product__stock').innerHTML = stockLabel(product.id);
 
   const qtyInput = article.querySelector('.product__qty-input');
-  qtyInput.max   = String(product.stock);
+  qtyInput.max = String(product.stock);
 
   const addBtn = article.querySelector('.product__add');
   if (stockMap[product.id] === 0) addBtn.disabled = true;
@@ -332,7 +453,7 @@ function createProductCard(product) {
   });
 
   // Prepare for entrance animation
-  article.style.opacity   = '0';
+  article.style.opacity = '0';
   article.style.transform = 'translateY(18px)';
 
   return article;
@@ -355,8 +476,8 @@ function renderProducts(list) {
     requestAnimationFrame(() => {
       setTimeout(() => {
         card.style.transition = 'opacity .35s ease, transform .35s ease';
-        card.style.opacity    = '1';
-        card.style.transform  = 'translateY(0)';
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
       }, i * 60);
     });
   });
@@ -366,7 +487,7 @@ function renderProducts(list) {
 
 function getFilteredSorted() {
   const query = searchInput.value.trim().toLowerCase();
-  const sort  = sortSelect.value;
+  const sort = sortSelect.value;
 
   let list = PRODUCTS.filter(
     (p) =>
@@ -374,21 +495,21 @@ function getFilteredSorted() {
       p.description.toLowerCase().includes(query)
   );
 
-  if (sort === 'price-asc')  list = [...list].sort((a, b) => a.price - b.price);
+  if (sort === 'price-asc') list = [...list].sort((a, b) => a.price - b.price);
   if (sort === 'price-desc') list = [...list].sort((a, b) => b.price - a.price);
 
   return list;
 }
 
 searchInput.addEventListener('input', () => renderProducts(getFilteredSorted()));
-sortSelect.addEventListener('change',  () => renderProducts(getFilteredSorted()));
+sortSelect.addEventListener('change', () => renderProducts(getFilteredSorted()));
 
 // ─── 10. CHECKOUT SIMULATION ──────────────────────────────────────────────────
 
 checkoutBtn.addEventListener('click', async () => {
   if (cart.length === 0) return;
 
-  checkoutBtn.disabled       = true;
+  checkoutBtn.disabled = true;
   checkoutStatus.textContent = '⏳ Processing your order…';
 
   await new Promise((r) => setTimeout(r, 1800)); // simulate network
@@ -410,9 +531,9 @@ checkoutBtn.addEventListener('click', async () => {
 
 // ─── 10b. CHECKOUT SUCCESS MODAL ─────────────────────────────────────────────
 
-const successModal   = document.getElementById('checkout-success-modal');
-const modalOrderId   = document.getElementById('modal-order-id');
-const modalBackBtn   = document.getElementById('modal-back-btn');
+const successModal = document.getElementById('checkout-success-modal');
+const modalOrderId = document.getElementById('modal-order-id');
+const modalBackBtn = document.getElementById('modal-back-btn');
 
 function generateOrderId() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -475,15 +596,15 @@ if (navToggle && navMenu) {
     } else {
       const isDark = document.documentElement.dataset.theme !== 'light';
       Object.assign(navMenu.style, {
-        display:       'flex',
+        display: 'flex',
         flexDirection: 'column',
-        position:      'absolute',
-        top:           '64px',
-        right:         '0',
-        background:    isDark ? 'rgba(8,11,22,.98)' : 'rgba(240,242,248,.98)',
-        padding:       '12px 24px',
-        borderRadius:  '0 0 14px 14px',
-        zIndex:        '20',
+        position: 'absolute',
+        top: '64px',
+        right: '0',
+        background: isDark ? 'rgba(8,11,22,.98)' : 'rgba(240,242,248,.98)',
+        padding: '12px 24px',
+        borderRadius: '0 0 14px 14px',
+        zIndex: '20',
       });
       navToggle.setAttribute('aria-expanded', 'true');
     }
@@ -503,16 +624,16 @@ if (footerYear) footerYear.textContent = String(new Date().getFullYear());
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   if (themeToggleBtn) {
-    const icon  = themeToggleBtn.querySelector('.theme-toggle__icon');
+    const icon = themeToggleBtn.querySelector('.theme-toggle__icon');
     const isDark = theme === 'dark';
-    icon.textContent                        = isDark ? '🌙' : '☀️';
+    icon.textContent = isDark ? '🌙' : '☀️';
     themeToggleBtn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
   }
 }
 
 function toggleTheme() {
   const current = document.documentElement.dataset.theme || 'dark';
-  const next    = current === 'dark' ? 'light' : 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
   localStorage.setItem(THEME_KEY, next);
   applyTheme(next);
 
@@ -534,7 +655,152 @@ if (themeToggleBtn) {
   themeToggleBtn.addEventListener('click', toggleTheme);
 }
 
-// ─── 15. INIT ─────────────────────────────────────────────────────────────────
+// ─── 15. AUTH UI ──────────────────────────────────────────────────────────────
+
+/** Sync entire header auth UI to current userState. */
+function renderAuthUI() {
+  if (userState.isLoggedIn && userState.userData) {
+    const { name, email, initials } = userState.userData;
+    authLoginBtn.hidden = true;
+    userMenu.hidden = false;
+    userInitialsEl.textContent = initials;
+    userGreetName.textContent = name.split(' ')[0];
+    userGreetEmail.textContent = email;
+  } else {
+    authLoginBtn.hidden = false;
+    userMenu.hidden = true;
+    userDropdown.classList.remove('user-dropdown--open');
+  }
+}
+
+// ── Auth Modal open / close ───────────────────────────────────────────────────
+
+function openAuthModal(tab = 'signin') {
+  authModal.classList.remove('modal--hidden');
+  // replay animation
+  const card = authModal.querySelector('.auth-card');
+  card.style.animation = 'none';
+  requestAnimationFrame(() => { card.style.animation = ''; });
+  switchTab(tab);
+  // focus first input
+  const firstInput = authModal.querySelector('.auth-panel:not(.auth-panel--hidden) .auth-input');
+  if (firstInput) setTimeout(() => firstInput.focus(), 50);
+}
+
+function closeAuthModal() {
+  authModal.classList.add('modal--hidden');
+  signinError.textContent = '';
+  registerError.textContent = '';
+  signinForm.reset();
+  registerForm.reset();
+}
+
+function switchTab(tab) {
+  const toSignin = tab === 'signin';
+  tabSignin.classList.toggle('auth-tab--active', toSignin);
+  tabSignin.setAttribute('aria-selected', String(toSignin));
+  tabRegister.classList.toggle('auth-tab--active', !toSignin);
+  tabRegister.setAttribute('aria-selected', String(!toSignin));
+  panelSignin.classList.toggle('auth-panel--hidden', !toSignin);
+  panelRegister.classList.toggle('auth-panel--hidden', toSignin);
+}
+
+// ── Button wiring ─────────────────────────────────────────────────────────────
+
+authLoginBtn.addEventListener('click', () => openAuthModal('signin'));
+authModalClose.addEventListener('click', closeAuthModal);
+authModal.addEventListener('click', (e) => { if (e.target === authModal) closeAuthModal(); });
+tabSignin.addEventListener('click', () => switchTab('signin'));
+tabRegister.addEventListener('click', () => switchTab('register'));
+
+// Escape closes auth modal too (in addition to cart / checkout modal)
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !authModal.classList.contains('modal--hidden')) closeAuthModal();
+});
+
+// ── User avatar / dropdown toggle ────────────────────────────────────────────
+
+userAvatarBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const isOpen = userDropdown.classList.contains('user-dropdown--open');
+  userDropdown.classList.toggle('user-dropdown--open', !isOpen);
+  userAvatarBtn.setAttribute('aria-expanded', String(!isOpen));
+});
+
+document.addEventListener('click', (e) => {
+  if (!userMenu.contains(e.target)) {
+    userDropdown.classList.remove('user-dropdown--open');
+    userAvatarBtn.setAttribute('aria-expanded', 'false');
+  }
+});
+
+// ── Sign In form ─────────────────────────────────────────────────────────────
+
+signinForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  signinError.textContent = '';
+  const email = document.getElementById('signin-email').value.trim();
+  const password = document.getElementById('signin-password').value;
+  if (!email || !password) { signinError.textContent = 'Please fill in all fields.'; return; }
+
+  signinSubmit.disabled = true;
+  signinSubmit.textContent = 'Signing in…';
+  try {
+    const userData = await authService.login(email, password);
+    userState = { isLoggedIn: true, userData };
+    renderAuthUI();
+    closeAuthModal();
+  } catch (err) {
+    signinError.textContent = err.message;
+  } finally {
+    signinSubmit.disabled = false;
+    signinSubmit.textContent = 'Sign In';
+  }
+});
+
+// ── Register form ────────────────────────────────────────────────────────────
+
+registerForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  registerError.textContent = '';
+  const name = document.getElementById('register-name').value.trim();
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value;
+  if (!name || !email || !password) { registerError.textContent = 'Please fill in all fields.'; return; }
+  if (password.length < 6) { registerError.textContent = 'Password must be at least 6 characters.'; return; }
+
+  registerSubmit.disabled = true;
+  registerSubmit.textContent = 'Creating account…';
+  try {
+    const userData = await authService.register(name, email, password);
+    userState = { isLoggedIn: true, userData };
+    renderAuthUI();
+    closeAuthModal();
+  } catch (err) {
+    registerError.textContent = err.message;
+  } finally {
+    registerSubmit.disabled = false;
+    registerSubmit.textContent = 'Create Account';
+  }
+});
+
+// ── Sign Out ─────────────────────────────────────────────────────────────────
+
+signoutBtn.addEventListener('click', () => {
+  authService.logout();
+  userState = { isLoggedIn: false, userData: null };
+  renderAuthUI();
+  userDropdown.classList.remove('user-dropdown--open');
+});
+
+// ─── 16. INIT ─────────────────────────────────────────────────────────────────
+
+// Restore auth session before rendering anything
+(function initAuth() {
+  const saved = authService.getCurrentUser();
+  if (saved) userState = { isLoggedIn: true, userData: saved };
+  renderAuthUI();
+})();
 
 renderProducts(PRODUCTS);
 renderCart();

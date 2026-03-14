@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fix-It Forward Shop</title>
     <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
     <header class="site-header">
         <a href="#" class="logo" aria-label="Fix It Forward Home">
@@ -23,14 +25,31 @@
             </ul>
         </nav>
         <div class="header-actions">
-            <button
-                id="theme-toggle"
-                class="theme-toggle"
-                aria-label="Switch to light mode"
-                title="Toggle theme"
-            >
+            <button id="theme-toggle" class="theme-toggle" aria-label="Switch to light mode" title="Toggle theme">
                 <span class="theme-toggle__icon">🌙</span>
             </button>
+
+            <!-- Auth: Login button (logged-out state) -->
+            <button id="auth-login-btn" class="auth-btn" aria-label="Sign in to your account">
+                Login
+            </button>
+
+            <!-- Auth: Avatar + dropdown (logged-in state) -->
+            <div id="user-menu" class="user-menu" hidden>
+                <button id="user-avatar-btn" class="user-avatar" aria-label="Open account menu" aria-expanded="false"
+                    aria-haspopup="true">
+                    <span id="user-initials">?</span>
+                </button>
+                <div id="user-dropdown" class="user-dropdown" role="menu" aria-label="Account menu">
+                    <p class="user-dropdown__greeting">Hello, <strong id="user-greeting-name">there</strong> 👋</p>
+                    <p class="user-dropdown__email" id="user-greeting-email"></p>
+                    <hr class="user-dropdown__divider" />
+                    <button class="user-dropdown__item" id="signout-btn" role="menuitem">
+                        <span aria-hidden="true">🚪</span> Sign Out
+                    </button>
+                </div>
+            </div>
+
             <button class="header-cart" data-open-cart="true">
                 Cart
                 <span class="header-cart__count" aria-live="polite">0</span>
@@ -69,12 +88,7 @@
                     </label>
                     <label>
                         <span class="visually-hidden">Search products</span>
-                        <input
-                            id="search-input"
-                            type="search"
-                            placeholder="Search products"
-                            autocomplete="off"
-                        />
+                        <input id="search-input" type="search" placeholder="Search products" autocomplete="off" />
                     </label>
                 </div>
             </header>
@@ -102,14 +116,7 @@
                         <div class="product__actions">
                             <label class="product__qty-label">
                                 Qty
-                                <input
-                                    class="product__qty-input"
-                                    type="number"
-                                    min="1"
-                                    max="9"
-                                    step="1"
-                                    value="1"
-                                />
+                                <input class="product__qty-input" type="number" min="1" max="9" step="1" value="1" />
                             </label>
                             <button class="btn btn--secondary product__add">Add to Cart</button>
                         </div>
@@ -160,16 +167,18 @@
     </footer>
 
     <!-- ── Checkout Success Modal ── -->
-    <div id="checkout-success-modal" class="modal-overlay modal--hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div id="checkout-success-modal" class="modal-overlay modal--hidden" role="dialog" aria-modal="true"
+        aria-labelledby="modal-title">
         <div class="modal-card">
             <div class="modal-card__icon" aria-hidden="true">
                 <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="28" cy="28" r="28" fill="url(#check-grad)"/>
-                    <path d="M16 28.5L23.5 36L40 20" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="28" cy="28" r="28" fill="url(#check-grad)" />
+                    <path d="M16 28.5L23.5 36L40 20" stroke="#fff" stroke-width="3.5" stroke-linecap="round"
+                        stroke-linejoin="round" />
                     <defs>
                         <linearGradient id="check-grad" x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
-                            <stop stop-color="#4c8dff"/>
-                            <stop offset="1" stop-color="#7f5dff"/>
+                            <stop stop-color="#4c8dff" />
+                            <stop offset="1" stop-color="#7f5dff" />
                         </linearGradient>
                     </defs>
                 </svg>
@@ -184,6 +193,72 @@
         </div>
     </div>
 
+    <!-- ── Auth Modal ── -->
+    <div id="auth-modal" class="modal-overlay modal--hidden" role="dialog" aria-modal="true"
+        aria-labelledby="auth-modal-title">
+        <div class="auth-card">
+            <button class="auth-card__close" id="auth-modal-close" aria-label="Close">×</button>
+
+            <!-- Tab switcher -->
+            <div class="auth-tabs" role="tablist" aria-label="Authentication options">
+                <button id="tab-signin" class="auth-tab auth-tab--active" role="tab" aria-selected="true"
+                    aria-controls="panel-signin">Sign In</button>
+                <button id="tab-register" class="auth-tab" role="tab" aria-selected="false"
+                    aria-controls="panel-register">Create Account</button>
+            </div>
+
+            <!-- Sign In panel -->
+            <div id="panel-signin" class="auth-panel" role="tabpanel" aria-labelledby="tab-signin">
+                <h2 class="auth-card__title" id="auth-modal-title">Welcome back</h2>
+                <p class="auth-card__subtitle">Sign in to your Fix-It Forward account.</p>
+                <form id="signin-form" novalidate>
+                    <div class="auth-field">
+                        <label for="signin-email" class="auth-label">Email</label>
+                        <input id="signin-email" class="auth-input" type="email" autocomplete="email"
+                            placeholder="you@example.com" required />
+                    </div>
+                    <div class="auth-field">
+                        <label for="signin-password" class="auth-label">Password</label>
+                        <input id="signin-password" class="auth-input" type="password" autocomplete="current-password"
+                            placeholder="••••••••" required />
+                    </div>
+                    <p class="auth-error" id="signin-error" aria-live="polite"></p>
+                    <button type="submit" class="btn btn--primary btn--full auth-submit" id="signin-submit">Sign
+                        In</button>
+                </form>
+            </div>
+
+            <!-- Create Account panel -->
+            <div id="panel-register" class="auth-panel auth-panel--hidden" role="tabpanel"
+                aria-labelledby="tab-register">
+                <h2 class="auth-card__title">Create Account</h2>
+                <p class="auth-card__subtitle">New here? Let's get you set up.</p>
+                <form id="register-form" novalidate>
+                    <div class="auth-field">
+                        <label for="register-name" class="auth-label">Full Name</label>
+                        <input id="register-name" class="auth-input" type="text" autocomplete="name"
+                            placeholder="Alex Johnson" required />
+                    </div>
+                    <div class="auth-field">
+                        <label for="register-email" class="auth-label">Email</label>
+                        <input id="register-email" class="auth-input" type="email" autocomplete="email"
+                            placeholder="you@example.com" required />
+                    </div>
+                    <div class="auth-field">
+                        <label for="register-password" class="auth-label">Password</label>
+                        <input id="register-password" class="auth-input" type="password" autocomplete="new-password"
+                            placeholder="Min. 6 characters" required />
+                    </div>
+                    <p class="auth-error" id="register-error" aria-live="polite"></p>
+                    <button type="submit" class="btn btn--primary btn--full auth-submit" id="register-submit">Create
+                        Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js" defer></script>
+
 </body>
+
 </html>
