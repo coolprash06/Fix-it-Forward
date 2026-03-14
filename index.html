@@ -44,6 +44,9 @@
                     <p class="user-dropdown__greeting">Hello, <strong id="user-greeting-name">there</strong> 👋</p>
                     <p class="user-dropdown__email" id="user-greeting-email"></p>
                     <hr class="user-dropdown__divider" />
+                    <button class="user-dropdown__item" id="my-orders-btn" role="menuitem">
+                        <span aria-hidden="true">📦</span> My Orders
+                    </button>
                     <button class="user-dropdown__item" id="signout-btn" role="menuitem">
                         <span aria-hidden="true">🚪</span> Sign Out
                     </button>
@@ -190,6 +193,42 @@
             <button class="btn btn--primary btn--full modal-card__cta" id="modal-back-btn">
                 Back to Shop
             </button>
+        </div>
+    </div>
+
+    <!-- ── Orders History Modal ── -->
+    <div id="orders-modal" class="modal-overlay modal--hidden" role="dialog" aria-modal="true"
+        aria-labelledby="orders-modal-title">
+        <div class="orders-card">
+            <div class="orders-card__header">
+                <h2 class="orders-card__title" id="orders-modal-title">📦 My Orders</h2>
+                <button class="auth-card__close" id="orders-modal-close" aria-label="Close orders">×</button>
+            </div>
+
+            <!-- Shimmer skeleton (shown while fetching) -->
+            <div id="orders-loading" class="orders-loading" aria-hidden="true">
+                <div class="shimmer-row"></div>
+                <div class="shimmer-row shimmer-row--short"></div>
+                <div class="shimmer-row"></div>
+                <div class="shimmer-row shimmer-row--short"></div>
+            </div>
+
+            <!-- Empty state -->
+            <div id="orders-empty" class="orders-empty" hidden>
+                <div class="orders-empty__icon" aria-hidden="true">🛍️</div>
+                <p class="orders-empty__title">Your shopping journey starts here!</p>
+                <p class="orders-empty__sub">You haven't placed any orders yet.</p>
+                <a href="#catalog" class="btn btn--primary orders-empty__cta" id="orders-start-shopping">Browse the
+                    Catalogue</a>
+            </div>
+
+            <!-- Error state -->
+            <div id="orders-error" class="orders-error" hidden>
+                <p>⚠️ Could not load orders. Please try again.</p>
+            </div>
+
+            <!-- Order list -->
+            <ul id="orders-list" class="orders-list" hidden aria-label="Your past orders"></ul>
         </div>
     </div>
 

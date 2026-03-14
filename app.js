@@ -820,7 +820,128 @@ document.getElementById('signout-btn').addEventListener('click', async () => {
   }
 });
 
-// ─── 16. INIT ─────────────────────────────────────────────────────────────────
+// ─── 16. ORDER HISTORY ────────────────────────────────────────────────────────
+
+const ordersModal = document.getElementById('orders-modal');
+const ordersModalClose = document.getElementById('orders-modal-close');
+const ordersLoading = document.getElementById('orders-loading');
+const ordersList = document.getElementById('orders-list');
+const ordersEmpty = document.getElementById('orders-empty');
+const ordersError = document.getElementById('orders-error');
+const myOrdersBtn = document.getElementById('my-orders-btn');
+
+/**
+ * Query the Supabase `orders` table for the current user's rows.
+ * RLS ensures the query only returns rows whose user_id = auth.uid().
+ *
+ * @returns {Promise<Array>} Array of order rows, newest first.
+ */
+async function fetchUserOrders() {
+  const { data, error } = await _supabase
+    .from('orders')
+    .select('id, created_at, items, subtotal, tax, total')
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+/** Format a UUID for display — e.g. first 8 chars uppercased. */
+function shortId(uuid) {
+  return '#' + uuid.replace(/-/g, '').slice(0, 8).toUpperCase();
+}
+
+/** Format an ISO date string to a readable local date. */
+function fmtDate(iso) {
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: 'numeric', month: 'short', day: 'numeric',
+  });
+}
+
+/** Build and inject order <li> cards into the list. */
+function renderOrders(orders) {
+  ordersList.innerHTML = '';
+  orders.forEach((order) => {
+    const li = document.createElement('li');
+    li.className = 'order-card';
+
+    const itemLines = (order.items || [])
+      .map(i => `<div class="order-card__item-line">
+                   <span>${i.title} ×${i.qty}</span>
+                   <span>${fmt(i.price * i.qty)}</span>
+                 </div>`)
+      .join('');
+
+    li.innerHTML = `
+      <div class="order-card__meta">
+        <span class="order-card__id">${shortId(order.id)}</span>
+        <span class="order-card__date">${fmtDate(order.created_at)}</span>
+        <span class="order-card__total">${fmt(order.total)}</span>
+      </div>
+      <div class="order-card__items">${itemLines}</div>
+    `;
+    ordersList.appendChild(li);
+  });
+}
+
+/** Show loading shimmer, hide everything else. */
+function showOrdersLoading() {
+  ordersLoading.hidden = false;
+  ordersList.hidden = true;
+  ordersEmpty.hidden = true;
+  ordersError.hidden = true;
+}
+
+/** Open the modal, trigger a fresh fetch, and render results. */
+async function openOrdersModal() {
+  // Close the dropdown
+  document.getElementById('user-dropdown').classList.remove('user-dropdown--open');
+
+  // Show and animate the modal
+  ordersModal.classList.remove('modal--hidden');
+  const card = ordersModal.querySelector('.orders-card');
+  card.style.animation = 'none';
+  requestAnimationFrame(() => { card.style.animation = ''; });
+
+  showOrdersLoading();
+
+  try {
+    const orders = await fetchUserOrders();
+    ordersLoading.hidden = true;
+
+    if (orders.length === 0) {
+      ordersEmpty.hidden = false;
+    } else {
+      ordersList.hidden = false;
+      renderOrders(orders);
+    }
+  } catch (err) {
+    console.error('[Orders] Fetch failed:', err.message);
+    ordersLoading.hidden = true;
+    ordersError.hidden = false;
+  }
+}
+
+function closeOrdersModal() {
+  ordersModal.classList.add('modal--hidden');
+}
+
+// ── Order modal wiring ────────────────────────────────────────────────────────
+
+myOrdersBtn.addEventListener('click', openOrdersModal);
+ordersModalClose.addEventListener('click', closeOrdersModal);
+ordersModal.addEventListener('click', (e) => { if (e.target === ordersModal) closeOrdersModal(); });
+
+// "Browse Catalogue" link inside empty state closes modal and scrolls
+document.getElementById('orders-start-shopping').addEventListener('click', () => {
+  closeOrdersModal();
+});
+
+// Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !ordersModal.classList.contains('modal--hidden')) closeOrdersModal();
+});
+
+// ─── 17. INIT ─────────────────────────────────────────────────────────────────
 
 // Restore Supabase session before rendering. getCurrentUser() is now async
 // because it awaits getSession() — Supabase reads its own localStorage token.
