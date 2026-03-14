@@ -11,6 +11,7 @@ const PRODUCTS = [
     id: 'p001',
     title: 'Aether Pro Keyboard',
     description: 'Low-profile mechanical switches, per-key RGB, and whisper-quiet actuation.',
+    alt: 'Aether Pro Keyboard — low-profile RGB mechanical keyboard on a white surface',
     price: 149.99,
     comparePrice: 199.99,
     stock: 12,
@@ -20,6 +21,7 @@ const PRODUCTS = [
     id: 'p002',
     title: 'Orbit Wireless Mouse',
     description: '26 000 DPI optical sensor, 72-hour battery, zero-delay 2.4 GHz dongle.',
+    alt: 'Orbit Wireless Mouse — sleek ergonomic wireless mouse on a dark desk',
     price: 89.99,
     comparePrice: 119.99,
     stock: 7,
@@ -29,6 +31,7 @@ const PRODUCTS = [
     id: 'p003',
     title: 'Lumina 4K Monitor',
     description: '27" IPS panel, 144 Hz, 1 ms GTG, factory-calibrated Display P3 coverage.',
+    alt: 'Lumina 4K Monitor — 27-inch widescreen monitor displaying a vivid desktop',
     price: 499.99,
     comparePrice: 649.99,
     stock: 4,
@@ -38,6 +41,7 @@ const PRODUCTS = [
     id: 'p004',
     title: 'Nova USB-C Hub',
     description: '10-in-1 hub — 4K HDMI, 100 W PD, 2× USB-A 3.2, SD/microSD, Ethernet.',
+    alt: 'Nova USB-C Hub — compact 10-in-1 USB-C hub with multiple ports',
     price: 59.99,
     comparePrice: 79.99,
     stock: 20,
@@ -47,6 +51,7 @@ const PRODUCTS = [
     id: 'p005',
     title: 'Phantom ANC Buds',
     description: 'Hybrid Active Noise Cancellation, 32 h total playback, spatial audio, IPX5.',
+    alt: 'Phantom ANC Buds — true wireless earbuds with charging case on a minimal surface',
     price: 219.99,
     comparePrice: 279.99,
     stock: 9,
@@ -56,6 +61,7 @@ const PRODUCTS = [
     id: 'p006',
     title: 'Vertex SSD 2 TB',
     description: 'PCIe Gen 4 NVMe — 7 400 MB/s sequential reads with shock-resistant casing.',
+    alt: 'Vertex SSD 2 TB — M.2 NVMe solid-state drive with heat shield',
     price: 134.99,
     comparePrice: 179.99,
     stock: 15,
@@ -65,6 +71,7 @@ const PRODUCTS = [
     id: 'p007',
     title: 'Slate Webcam 4K',
     description: 'Sony STARVIS sensor, f/1.8 aperture, hardware privacy shutter, dual mics.',
+    alt: 'Slate Webcam 4K — clip-on webcam mounted on a monitor with privacy shutter',
     price: 169.99,
     comparePrice: 219.99,
     stock: 6,
@@ -74,10 +81,73 @@ const PRODUCTS = [
     id: 'p008',
     title: 'Fusion Charging Pad',
     description: '3-in-1 MagSafe-compatible — phone, watch & buds charged simultaneously.',
+    alt: 'Fusion Charging Pad — circular wireless charging pad powering a smartphone',
     price: 79.99,
     comparePrice: 109.99,
     stock: 18,
-    image: 'https://images.unsplash.com/photo-1618577608401-1ef95337e3ee?w=600&q=80',
+    // Reliable Unsplash: iPhone on MagSafe-style wireless charging pad
+    image: 'https://images.unsplash.com/photo-1616348436168-de43ad0db179?w=600&q=80',
+  },
+  {
+    id: 'p009',
+    title: 'Aura Noise-Cancelling Headphones',
+    description: '40 dB hybrid ANC, 38 h playtime, foldable aluminum frame, LDAC hi-res audio.',
+    alt: 'Aura Noise-Cancelling Headphones — over-ear headphones resting on a wooden surface',
+    price: 279.99,
+    comparePrice: 349.99,
+    stock: 5,
+    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&q=80',
+  },
+  {
+    id: 'p010',
+    title: 'Titan Mechanical Switch Set',
+    description: '110-pack factory-lubed tactile switches, 45 g actuation, POM housing, RGB-compatible.',
+    alt: 'Titan Mechanical Switch Set — colourful mechanical keyboard switches arranged in a grid',
+    price: 34.99,
+    comparePrice: 49.99,
+    stock: 32,
+    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80',
+  },
+  {
+    id: 'p011',
+    title: 'Neo-Glow RGB Desk Mat',
+    description: 'XL 900×400 mm surface, addressable LED border, non-slip base, stitched edge.',
+    alt: 'Neo-Glow RGB Desk Mat — XL RGB-lit desk mat under keyboard and mouse on a gaming setup',
+    price: 44.99,
+    comparePrice: 64.99,
+    stock: 22,
+    // Reliable Unsplash: gaming desk setup with RGB lighting
+    image: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&q=80',
+  },
+  {
+    id: 'p012',
+    title: 'Prism Portable Projector',
+    description: '1080p full-HD, 700 ANSI lumen, auto-keystone, HDMI + USB-C, built-in Harman speaker.',
+    alt: 'Prism Portable Projector — compact mini projector casting an image on a white wall',
+    price: 399.99,
+    comparePrice: 499.99,
+    stock: 3,
+    image: 'https://images.unsplash.com/photo-1626379953822-baec19c3accd?w=600&q=80',
+  },
+  {
+    id: 'p013',
+    title: 'Carbon Laptop Stand',
+    description: 'Adjustable 15°–50°, aircraft-grade aluminium, passive cooling fins, fits 11–17″.',
+    alt: 'Carbon Laptop Stand — adjustable aluminium laptop stand elevating a MacBook',
+    price: 49.99,
+    comparePrice: 69.99,
+    stock: 14,
+    image: 'https://images.unsplash.com/photo-1623126908029-58cb08a2b272?w=600&q=80',
+  },
+  {
+    id: 'p014',
+    title: 'Echo Smart Hub Speaker',
+    description: '360° room-filling sound, built-in Zigbee smart home hub, far-field voice, aux out.',
+    alt: 'Echo Smart Hub Speaker — cylindrical smart speaker on a bedside table',
+    price: 129.99,
+    comparePrice: 169.99,
+    stock: 2,
+    image: 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=600&q=80',
   },
 ];
 
@@ -408,7 +478,18 @@ function addToCart(productId, qty) {
   saveCart(cart);
   renderCart();
   updateStockBadge(productId);
+  cartPulse();
   openCart();
+}
+
+/** Momentarily pulse the cart badge to confirm the item was added. */
+function cartPulse() {
+  if (!cartCountEl) return;
+  cartCountEl.classList.remove('cart-badge--pulse');
+  // Force reflow so re-adding the class restarts the animation
+  void cartCountEl.offsetWidth;
+  cartCountEl.classList.add('cart-badge--pulse');
+  cartCountEl.addEventListener('animationend', () => cartCountEl.classList.remove('cart-badge--pulse'), { once: true });
 }
 
 // ─── 8. PRODUCT CARD RENDERING ────────────────────────────────────────────────
@@ -430,7 +511,7 @@ function createProductCard(product) {
 
   const img = article.querySelector('.product__image');
   img.src = product.image;
-  img.alt = product.title;
+  img.alt = product.alt || product.title;
   img.loading = 'lazy';
 
   article.querySelector('.product__title').textContent = product.title;
