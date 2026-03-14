@@ -142,10 +142,21 @@
                 <p class="cart__empty" id="cart-empty-msg">Your cart is currently empty.</p>
             </div>
             <footer class="cart__footer">
+                <!-- Promo Code -->
+                <div class="promo-row" id="promo-row">
+                    <input id="promo-input" class="promo-input" type="text" placeholder="Promo code" aria-label="Promo code" autocomplete="off" />
+                    <button id="promo-apply-btn" class="btn btn--secondary promo-btn">Apply</button>
+                </div>
+                <p id="promo-msg" class="promo-msg" hidden></p>
+
                 <dl class="cart__summary">
                     <div>
                         <dt>Subtotal</dt>
                         <dd id="cart-subtotal">$0.00</dd>
+                    </div>
+                    <div id="cart-discount-row" hidden>
+                        <dt>Discount (10%)</dt>
+                        <dd id="cart-discount" style="color: #4ade80;">-$0.00</dd>
                     </div>
                     <div>
                         <dt>Estimated Tax</dt>
@@ -163,6 +174,9 @@
             </footer>
         </aside>
     </main>
+
+    <!-- ── Toast notifications ── -->
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
     <footer id="footer" class="site-footer">
         <p>© <span id="footer-year">2023</span> Fix-It Forward. All rights maybe reserved.</p>

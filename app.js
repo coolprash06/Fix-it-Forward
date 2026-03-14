@@ -423,8 +423,11 @@ function renderCart() {
     cartItemsList.appendChild(li);
   });
 
-  const tax = subtotal * TAX_RATE;
-  const total = subtotal + tax;
+  // Apply discount logic
+  const discountAmount = subtotal * (cart.discount || 0);
+  const taxableAmount = subtotal - discountAmount;
+  const tax = taxableAmount * TAX_RATE;
+  const total = taxableAmount + tax;
 
   cartSubtotalEl.textContent = fmt(subtotal);
   cartTaxEl.textContent = fmt(tax);
@@ -759,7 +762,7 @@ document.querySelector('.logo')?.addEventListener('click', (e) => {
 
 // ─── 13b. FAQ MODAL ───────────────────────────────────────────────────────────
 
-const faqModal      = document.getElementById('faq-modal');
+const faqModal = document.getElementById('faq-modal');
 const faqModalClose = document.getElementById('faq-modal-close');
 
 function openFaqModal() {
@@ -783,8 +786,8 @@ document.addEventListener('keydown', (e) => {
 // Accordion toggle for each FAQ question
 document.querySelectorAll('.faq-question').forEach((btn) => {
   btn.addEventListener('click', () => {
-    const answer   = btn.nextElementSibling;
-    const isOpen   = btn.getAttribute('aria-expanded') === 'true';
+    const answer = btn.nextElementSibling;
+    const isOpen = btn.getAttribute('aria-expanded') === 'true';
     // Close all others first
     document.querySelectorAll('.faq-question').forEach((b) => {
       b.setAttribute('aria-expanded', 'false');
@@ -1137,3 +1140,40 @@ document.addEventListener('keydown', (e) => {
 
 renderProducts(PRODUCTS);
 renderCart();
+
+
+// 1. Analytics Service
+async function trackEvent(eventName) {
+  console.log(`[Analytics] Event Tracked: ${eventName}`);
+  try {
+    const { data, error } = await _supabase
+      .from('analytics_events')
+      .insert([{ event_name: eventName, user_id: (await _supabase.auth.getUser()).data.user?.id || null }]);
+    if (error) throw error;
+  } catch (err) {
+    console.error('[Analytics] Error:', err.message);
+  }
+}
+
+// 2. Promo Code Logic
+document.addEventListener('click', async (e) => {
+  if (e.target.id === 'apply-promo-btn') {
+    const input = document.getElementById('promo-input');
+    const code = input.value.trim().toUpperCase();
+
+    if (code === 'FIXIT2026') {
+      // FIX: Changed 'state' to 'cart' to match your app's variables
+      cart.discount = 0.10;
+      alert('Promo Applied: 10% Discount!');
+      renderCart();
+      trackEvent('promo_applied');
+    } else {
+      alert('Invalid Promo Code');
+    }
+  }
+
+  // 3. Checkout Analytics Trigger (matches your checkout button ID)
+  if (e.target.id === 'checkout-btn') {
+    await trackEvent('checkout_attempt');
+  }
+});
