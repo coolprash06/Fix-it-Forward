@@ -87,98 +87,111 @@ const stockMap = Object.fromEntries(PRODUCTS.map((p) => [p.id, p.stock]));
 const TAX_RATE = 0.085; // 8.5 %
 const STORAGE_KEY = 'fif_cart_v1';
 const THEME_KEY = 'fif_theme_v1'; // 'dark' | 'light'
-const AUTH_KEY = 'fif_auth_v1';  // current session: { name, email, initials }
-const USERS_KEY = 'fif_users_v1'; // user "database": [{ name, email, passHash }]
 
-// ─── 2. AUTH SERVICE (mock backend — swap method bodies for Firebase/Supabase) ─
+// ─── 2. SUPABASE CLIENT ──────────────────────────────────────────────────────────────
+
+// !! Replace these values with your own from Supabase Dashboard → Settings → API
+const SUPABASE_URL = 'https://giffkwqegypxjxuvbgty.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_HujVU2jLKWObiTACZhKoKw_qyJtrU-K';
+
+/** Supabase client instance shared across authService and order writes. */
+const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /**
- * Simple djb2-style hash so we never store raw passwords.
- * Replace with bcrypt / Firebase Auth in production.
+ * Maps a raw Supabase User object → the shape the rest of the app expects.
+ * Name + initials are stored in user_metadata on sign-up.
  */
-function _hashPass(str) {
-  let h = 5381;
-  for (let i = 0; i < str.length; i++) h = ((h << 5) + h) ^ str.charCodeAt(i);
-  return (h >>> 0).toString(36);
+function _toUserData(user) {
+  const meta = user.user_metadata || {};
+  const name = meta.name || user.email.split('@')[0];
+  const initials = meta.initials || name[0].toUpperCase();
+  return { name, email: user.email, initials };
 }
 
-const authService = {
-  // ── Internal helpers ────────────────────────────────────────────────────────
-  _getUsers() {
-    try { return JSON.parse(localStorage.getItem(USERS_KEY)) || []; } catch { return []; }
-  },
-  _saveUsers(users) {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  },
-  _saveSession(userData) {
-    localStorage.setItem(AUTH_KEY, JSON.stringify(userData));
-  },
-
-  // ── Public API ── (replace bodies here to integrate Firebase/Supabase) ─────
-
+/**
+ * supabaseService — Real backend via Supabase Auth.
+ *
+ * Public API is identical to the old mock authService, so zero wiring
+ * changes are needed elsewhere in the app.
+ *
+ * To switch providers (e.g. Firebase), replace the body of each method only.
+ */
+const supabaseService = {
   /**
-   * Login with email + password.
-   * @returns {Promise<{name, email, initials}>} resolves on success, rejects with Error on failure.
-   * Firebase equivalent:
-   *   return signInWithEmailAndPassword(auth, email, password)
-   *          .then(cred => toUserData(cred.user));
+   * Sign in with email + password.
+   * Supabase SDK: _supabase.auth.signInWithPassword()
    */
   async login(email, password) {
-    await new Promise(r => setTimeout(r, 700)); // simulate latency
-    const users = this._getUsers();
-    const user = users.find(u => u.email === email.toLowerCase().trim());
-    if (!user || user.passHash !== _hashPass(password)) {
-      throw new Error('Invalid email or password.');
-    }
-    const userData = { name: user.name, email: user.email, initials: user.initials };
-    this._saveSession(userData);
-    return userData;
+    const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+    if (error) throw new Error(error.message);
+    return _toUserData(data.user);
   },
 
   /**
-   * Register a new account.
-   * @returns {Promise<{name, email, initials}>}
-   * Firebase equivalent:
-   *   return createUserWithEmailAndPassword(auth, email, password)
-   *          .then(cred => updateProfile(cred.user, { displayName: name }))
-   *          .then(() => toUserData(auth.currentUser));
+   * Create a new account, persisting display name + initials
+   * in Supabase user_metadata so they survive session restores.
+   * Supabase SDK: _supabase.auth.signUp()
    */
   async register(name, email, password) {
-    await new Promise(r => setTimeout(r, 800)); // simulate latency
-    const users = this._getUsers();
-    const normEmail = email.toLowerCase().trim();
-    if (users.find(u => u.email === normEmail)) {
-      throw new Error('An account with this email already exists.');
-    }
     const words = name.trim().split(/\s+/);
     const initials = (words[0][0] + (words[1] ? words[1][0] : '')).toUpperCase();
-    const newUser = { name: name.trim(), email: normEmail, initials, passHash: _hashPass(password) };
-    users.push(newUser);
-    this._saveUsers(users);
-    const userData = { name: newUser.name, email: newUser.email, initials };
-    this._saveSession(userData);
-    return userData;
+    const { data, error } = await _supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name: name.trim(), initials } },
+    });
+    if (error) throw new Error(error.message);
+    // If email confirmation is enabled, data.user exists but session is null.
+    if (!data.user) throw new Error('Registration failed — please try again.');
+    return _toUserData(data.user);
   },
 
   /**
-   * Sign out the current user.
-   * Firebase equivalent: signOut(auth);
+   * Sign out and invalidate the Supabase session token.
+   * Supabase SDK: _supabase.auth.signOut()
    */
-  logout() {
-    localStorage.removeItem(AUTH_KEY);
+  async logout() {
+    await _supabase.auth.signOut();
   },
 
   /**
-   * Read the persisted session (called on page load).
-   * Firebase equivalent: listen to onAuthStateChanged(auth, callback).
-   * @returns {{name, email, initials}|null}
+   * Read the active session on page load.
+   * Supabase automatically persists the session in localStorage;
+   * this simply reads and returns it.
+   * Supabase SDK: _supabase.auth.getSession()
+   *
+   * @returns {Promise<{name, email, initials}|null>}
    */
-  getCurrentUser() {
-    try {
-      return JSON.parse(localStorage.getItem(AUTH_KEY)) || null;
-    } catch { return null; }
+  async getCurrentUser() {
+    const { data: { session } } = await _supabase.auth.getSession();
+    if (!session) return null;
+    return _toUserData(session.user);
   },
 };
+
+/**
+ * Persist a completed order to the Supabase `orders` table.
+ * Reads the live session to get the authenticated user_id, ensuring
+ * the RLS policy (auth.uid() = user_id) is satisfied.
+ *
+ * Schema: id, user_id, items (jsonb), subtotal, tax, total, created_at
+ */
+async function saveOrderToSupabase(items, subtotal, tax, total) {
+  const { data: { session } } = await _supabase.auth.getSession();
+  if (!session) {
+    console.warn('[Orders] Skipped — user is not logged in.');
+    return;
+  }
+  const { error } = await _supabase.from('orders').insert({
+    user_id: session.user.id,
+    items: items.map(i => ({ id: i.id, title: i.title, price: i.price, qty: i.qty })),
+    subtotal: parseFloat(subtotal.toFixed(2)),
+    tax: parseFloat(tax.toFixed(2)),
+    total: parseFloat(total.toFixed(2)),
+  });
+  if (error) console.error('[Orders] Supabase insert failed:', error.message);
+  else console.info('[Orders] Saved — total:', fmt(total));
+}
 
 // ─── 3. USER STATE ────────────────────────────────────────────────────────────
 
@@ -512,22 +525,29 @@ checkoutBtn.addEventListener('click', async () => {
   checkoutBtn.disabled = true;
   checkoutStatus.textContent = '⏳ Processing your order…';
 
-  await new Promise((r) => setTimeout(r, 1800)); // simulate network
+  // Capture totals before cart is cleared
+  const sub = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const tax = sub * TAX_RATE;
+  const total = sub + tax;
+  const itemsSnapshot = [...cart];
 
-  const success = Math.random() < 0.9; // 90 % success rate
+  try {
+    // Persist the order to Supabase (silently skips if not logged in)
+    await saveOrderToSupabase(itemsSnapshot, sub, tax, total);
 
-  if (success) {
     cart = [];
     saveCart(cart);
     renderCart();
     checkoutStatus.textContent = '';
     closeCart();
     showSuccessModal();
-  } else {
+  } catch (err) {
+    console.error('[Checkout]', err);
     checkoutStatus.textContent = '❌ Something went wrong. Please try again.';
     checkoutBtn.disabled = false;
   }
 });
+
 
 // ─── 10b. CHECKOUT SUCCESS MODAL ─────────────────────────────────────────────
 
@@ -746,7 +766,7 @@ signinForm.addEventListener('submit', async (e) => {
   signinSubmit.disabled = true;
   signinSubmit.textContent = 'Signing in…';
   try {
-    const userData = await authService.login(email, password);
+    const userData = await supabaseService.login(email, password);
     userState = { isLoggedIn: true, userData };
     renderAuthUI();
     closeAuthModal();
@@ -772,7 +792,7 @@ registerForm.addEventListener('submit', async (e) => {
   registerSubmit.disabled = true;
   registerSubmit.textContent = 'Creating account…';
   try {
-    const userData = await authService.register(name, email, password);
+    const userData = await supabaseService.register(name, email, password);
     userState = { isLoggedIn: true, userData };
     renderAuthUI();
     closeAuthModal();
@@ -784,20 +804,28 @@ registerForm.addEventListener('submit', async (e) => {
   }
 });
 
-// ── Sign Out ─────────────────────────────────────────────────────────────────
-
-signoutBtn.addEventListener('click', () => {
-  authService.logout();
-  userState = { isLoggedIn: false, userData: null };
-  renderAuthUI();
-  userDropdown.classList.remove('user-dropdown--open');
+// Re-query live so the handler is never relying on a stale cache of a hidden element.
+document.getElementById('signout-btn').addEventListener('click', async () => {
+  try {
+    await supabaseService.logout();
+  } catch (err) {
+    // Log but don't block the UI — always sign the user out locally.
+    console.error('[Auth] Sign-out error:', err.message);
+  } finally {
+    userState = { isLoggedIn: false, userData: null };
+    renderAuthUI();
+    document.getElementById('user-dropdown').classList.remove('user-dropdown--open');
+    // Reload to flush any in-memory Supabase token/session state.
+    window.location.reload();
+  }
 });
 
 // ─── 16. INIT ─────────────────────────────────────────────────────────────────
 
-// Restore auth session before rendering anything
-(function initAuth() {
-  const saved = authService.getCurrentUser();
+// Restore Supabase session before rendering. getCurrentUser() is now async
+// because it awaits getSession() — Supabase reads its own localStorage token.
+(async function initAuth() {
+  const saved = await supabaseService.getCurrentUser();
   if (saved) userState = { isLoggedIn: true, userData: saved };
   renderAuthUI();
 })();
