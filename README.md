@@ -1,131 +1,66 @@
-# Fix-It Forward: Broken Store Challenge
+DebugMart: Reconstructed 🚀
+A Production-Ready Full-Stack E-commerce Evolution
 
-Welcome to **Fix-It Forward**.
+📖 Project Overview
+DebugMart is a comprehensive reconstruction of the "Fix-It Forward" prototype. I transformed an unstable, front-end-only demo into a secure, scalable, and high-performance retail application. This project demonstrates advanced capabilities in handling full-stack integration, cloud database architecture, and premium UI/UX design under rapid development constraints.
 
-This repository contains a deliberately incomplete and fragile front-end for a small e‑commerce experience. The goal of the event is to transform this unstable prototype into a polished, reliable, and production-ready online store.
+📺 Demo Video
+Watch the Before & After Technical Walkthrough here: https://drive.google.com/file/d/1IdRXLoDwj3dvH5GYSLBLgFC770UFdYVx/view?usp=sharing
 
----
+🔗 Live Production Environment
+Deployment URL: https://fix-it-forward-beta.vercel.app/
 
-## Event Concept
+🛠️ Technical Masterpiece (100% Extension Coverage)
+I successfully implemented every optional extension to mirror modern industry standards:
 
-**Fix-It Forward** is a focused website transformation event. You start with a visually appealing but unreliable store and push it all the way to a professional, usable, and market-ready experience.
+🔐 1. Advanced Identity & Security Layer
+JWT-Based Authentication: Integrated Supabase Auth for secure, token-based user registration and login.
 
-You will:
+Session Management: Developed a persistent session restoration engine that syncs with localStorage to ensure zero-friction user return visits.
 
-- Analyse and understand an existing front-end implementation.
-- Repair inconsistencies and flaws in behaviour, experience, and structure.
-- Extend the project with real backend capabilities and additional features.
+Server-Side Security (RLS): Configured PostgreSQL Row Level Security policies. This ensures data isolation—users can strictly only view orders associated with their unique auth.uid().
 
-By the end, the store should feel like something you would be comfortable putting in front of real customers.
+📊 2. Cloud-Native Backend Architecture
+Relational Schema Design: Designed an orders table using PostgreSQL to store complex data types, including JSONB arrays for itemized receipts.
 
----
+Asynchronous Fetching Engine: Developed a custom data-access layer that retrieves order history with real-time feedback.
 
-## Scenario
+Premium UX States: Implemented Shimmer Skeleton Loading and smooth CSS transitions to eliminate "layout shift" while fetching cloud data.
 
-You have inherited a front-end prototype for a fictional shop called **Fix-It Forward Shop**. It looks reasonably modern and seems to work at a glance, but it was built quickly for a demo and never hardened for real use.
+📈 3. Real-Time Business Intelligence
+Analytics Event Service: Built a custom event tracker that captures user behavior (conversion attempts, successful checkouts, and promo code usage).
 
-Your job during the event is to:
+Cloud Logging: These events are synchronized directly to a dedicated Supabase analytics_events table, providing a ready-to-use dataset for business analysis.
 
-- Turn this into a **smooth, efficient, fully functional** online store prototype.
-- Treat the current codebase as a starting point, not a finished product.
+🎨 4. Premium UI/UX Engineering
+Theme Context Engine: Developed a centralized theme manager that handles prefers-color-scheme and user-saved preferences.
 
-There is no backend yet: all data is currently in the front-end. Part of your challenge is designing and wiring up proper backend behaviour.
+High-Fidelity Aesthetics: Utilized Glassmorphism (backdrop-filters) and high-z-index sticky navigation to create a modern, high-end retail feel.
 
----
+Micro-interactions: Staggered card animations (Entrance API) and badge pulsing for tactile user feedback.
 
-## Your Objectives
+💰 5. Complex Business Logic
+Dynamic Inventory Engine: Created a state-managed stockMap that updates in real-time. The UI reacts instantly to stock depletion, disabling purchase buttons to prevent "overselling."
 
-During the event, aim to achieve the following:
+Promo & Tax Engine: A sophisticated calculation layer that handles 8.5% sales tax and real-time discount applications (Code: FIXIT2026).
 
-1. **Aesthetically refined**
-   - Maintain or improve the visual quality of the UI.
-   - Ensure the design feels consistent, intentional, and on-brand for an online store.
+🏗️ The Engineering Stack
+Frontend Architecture: Vanilla JavaScript (Modular Service-Oriented Pattern), CSS3 Grid/Flexbox, HTML5.
 
-2. **Fully functional**
-   - Make the store behave like a real e‑commerce experience from a user’s point of view.
-   - Support browsing products, adding them to a cart, reviewing a summary, and completing a checkout flow.
+Backend Infrastructure: Supabase (Auth, PostgreSQL, Real-time Engine).
 
-3. **Technically structured**
-   - Organise the code so that it is maintainable and extensible.
-   - Prepare the project so that future engineers could comfortably build on top of it.
+CI/CD & Hosting: Vercel (Automated Build & Deployment Pipelines).
 
-4. **Ready for real‑world application**
-   - Treat performance, accessibility, and resilience as first‑class concerns.
-   - Design your changes as if this store might eventually receive real traffic.
+Version Control: Git/GitHub (Atomic Commit Strategy).
 
----
+🚀 Setup & Local Development
+Clone the repository: git clone https://github.com/coolprash06/DebugMart.git
 
-## What You’re Given
+Since this is a vanilla JS project, no npm install is required.
 
-This repo currently contains:
+Open index.html via a local server (like VS Code Live Server) to prevent CORS issues with Supabase API calls.
 
-- `index.html`  
-  The main application shell and markup for the store.
+Ensure your environment variables for Supabase are correctly mapped in app.js.
 
-- `styles.css`  
-  Global styles and layout rules for the site.
-
-- `app.js`  
-  Front‑end logic for rendering products, managing a cart, and handling the basic flow.
-
-There is intentionally **no backend** in this repository yet.
-
----
-
-## What You Are Expected To Build
-
-You are encouraged to:
-
-- Stabilise and refine the existing front-end experience.
-- Introduce a backend of your choice (for example: a simple API, a small database, or a mocked service layer) to support:
-  - Product listing and retrieval.
-  - Cart or order persistence.
-  - A basic checkout or order‑submission flow.
-- Add any extra features that you think make the experience more realistic or delightful.
-
-Technology choices for the backend and any additional tooling are up to you, as long as the result is coherent and demonstrable.
-
----
-
-## How to Run the Project
-
-This project is a static front-end and can be opened directly in a browser.
-
-**Option 1: Open the file directly**
-
-1. Open the repository folder in your editor.  
-2. Open `index.html` in your browser (for example, via your editor’s “Open in Browser” command or by double‑clicking the file in your file explorer).
-
-**Option 2: Run a simple local web server**
-
-You may prefer to serve the files over HTTP (for example, if you add API endpoints later):
-
-1. From the project root, start a small static server of your choice (for example, using Python, Node, or your preferred tooling).
-2. Visit the URL that your server prints (commonly `http://localhost:8000` or similar).
-
-No build step is required for the initial version: the app is plain HTML, CSS, and JavaScript.
-
----
-
-## Suggested Extensions (Optional)
-
-Once the basic experience feels solid, consider exploring:
-
-- User accounts and saved carts.
-- Basic inventory management (stock levels, availability).
-- Simple promotions or discount logic.
-- Order confirmation views and lightweight tracking.
-- Improved analytics or event tracking.
-
-These are not mandatory, but they mirror real‑world expectations for a more complete store.
-
----
-
-## Ground Rules
-
-- You are free to refactor, reorganise, rename, and restructure the codebase as you see fit.
-- You may introduce frameworks, libraries, or build tooling if it helps you deliver a better result.
-- Focus on clarity, maintainability, and correctness.
-- Document any important decisions so that another engineer can quickly understand your approach.
-
-Have fun transforming this prototype into something truly robust and ready to ship.
+🏁 Final Submission Note
+This project represents a full lifecycle development: from auditing a broken codebase to deploying a resilient, cloud-integrated storefront. Every bug was treated as a learning opportunity to build a more robust system.
